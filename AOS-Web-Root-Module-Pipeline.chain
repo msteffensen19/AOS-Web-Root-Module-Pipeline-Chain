@@ -1,0 +1,224 @@
+---
+version: 4
+id: "2110527"
+title: "AOS-Web-Root-Module-Pipeline"
+schedule:
+  type: "changeset"
+fetchStream: true
+runNoChangesets: false
+mandatoryGate: "IGNORE"
+cleanBeforeCheckout: true
+haltOnFailure: false
+executionTimeout: 0
+runQueued: "LIMIT_QUEUED_RUNS"
+scanPaths: ""
+matchingPaths: ""
+capabilities: "maven"
+experts:
+- expert:
+    title: "Maven - Build AOS Root Module"
+    name: "Maven"
+    key: "2110897"
+    id: "com.serena.starlight:maven"
+    chainOrder: "1"
+    properties:
+      pulseOutputVariableList: ""
+      pulseFindingsUnstableSeverityCount: "1"
+      pulseFindingsFailSeverityCount: "1"
+      goals: "clean install  -P DA -pl root -am"
+      javaHome: "/usr/lib/jvm/zulu11"
+      pulseConsoleUnstableRegex: ""
+      mavenPath: "/usr/bin/mvn"
+      pulseFindingsUnstableOn: "false"
+      advancedOptions: ""
+      pulseConsoleFailRegex: ""
+      pulseUnitTestFailuresFailOn: "false"
+      pulseDisplayFailedUnitTests: "DISPLAY_ALWAYS"
+      useAdvancedOptions: "true"
+      pulseFindingsUnstableSeverity: "ERROR"
+      pulseStepEnabled: "true"
+      envProps: ""
+      pulseFindingsFailSeverity: "ERROR"
+      javaOpts: ""
+      pulseFindingsFailOn: "false"
+      pulseConsoleUnstableOn: "false"
+      pulseUnitTestFailuresUnstableOn: "false"
+      pulseConsoleFailOn: "false"
+- expert:
+    title: "Script - Deploy new AOS root module"
+    name: "Script"
+    key: "2110898"
+    id: "com.serena.starlight:script"
+    chainOrder: "2"
+    properties:
+      pulseOutputVariableList: ""
+      pulseFindingsUnstableSeverityCount: "1"
+      pulseFindingsFailSeverityCount: "1"
+      pulseConsoleUnstableRegex: ""
+      pulseFindingsUnstableOn: "false"
+      scriptLanguage: "SHELL_SCRIPT"
+      pulseConsoleFailRegex: ""
+      typeScript: "INLINE"
+      pulseUnitTestFailuresFailOn: "false"
+      pulseDisplayFailedUnitTests: "DISPLAY_ALWAYS"
+      commandLine: "#!/bin/bash\n                ACCOUNT_IP=nimbusserver.aos.com\n\
+        \                ACCOUNT_PORT=8001\n                MAIN_IP=nimbusserver.aos.com\n\
+        \                MAIN_PORT=8002\n                POSTGRES_PORT=5432\n    \
+        \            POSTGRES_IP=nimbusserver.aos.com\n\n                cp root/target/ROOT.war\
+        \ root.war                \n                mkdir \"temp\"\n             \
+        \   x=`find . -iname \"*.war\" | cut -d/ -f2`\n                for i in $x\n\
+        \                do\n                chmod 777 $i\n                ls -l\n\
+        \                echo \"for ------> $i\"\n                i=root.war\n   \
+        \             mv $i \"./temp\"\n                cd \"./temp\"\n          \
+        \      jar -xf $i\n                path_to_services=\"./WEB-INF/classes/properties/services.properties\"\
+        \n                if [ \"$i\" == root* ];then\n                path_to_services=\"\
+        ./services.properties\"\n                fi\n                sed -i 's/\\\
+        .\\./\\/opt/g' \"./WEB-INF/classes/log4j.properties\"\n                #Account\n\
+        \n                sed -i \"s/@account.soapservice.url.host@/$ACCOUNT_IP/g\"\
+        \ $path_to_services\n                sed -i \"s/@account.soapservice.url.port@/$ACCOUNT_PORT/g\"\
+        \ $path_to_services\n                sed -i \"s#account.soapservice.url.suffix=accountservice#account.soapservice.url.suffix=/accountservice/ws#g\"\
+        \ $path_to_services\n                #Catalog\n                sed -i \"s/@catalog.service.url.host@/$MAIN_IP/g\"\
+        \ $path_to_services\n                sed -i \"s/@catalog.service.url.port@/$MAIN_PORT/g\"\
+        \ $path_to_services\n                #Order\n                sed -i \"s/@order.service.url.host@/$MAIN_IP/g\"\
+        \ $path_to_services\n                sed -i \"s/@order.service.url.port@/$MAIN_PORT/g\"\
+        \ $path_to_services\n                #MasterCredit\n                sed -i\
+        \ \"s/@mastercredit.service.url.host@/$MAIN_IP/g\" $path_to_services\n   \
+        \             sed -i \"s/@mastercredit.service.url.port@/$MAIN_PORT/g\" $path_to_services\n\
+        \                #SafePay\n                sed -i \"s/@safepay.service.url.host@/$MAIN_IP/g\"\
+        \ $path_to_services\n                sed -i \"s/@safepay.service.url.port@/$MAIN_PORT/g\"\
+        \ $path_to_services\n                #ShipEx\n                sed -i \"s/@shipex.soapservice.url.host@/$MAIN_IP/g\"\
+        \ $path_to_services\n                sed -i \"s/@shipex.soapservice.url.port@/$MAIN_PORT/g\"\
+        \ $path_to_services\n\n                sed -i 's/single\\.machine\\.deployment=true/single\\\
+        .machine\\.deployment=false/g' \"$path_to_services\"\n\n                if\
+        \ [[ \"$i\" == \"order.war\" || \"$i\" == \"catalog.war\" ]];then\n      \
+        \          sed -i 's/=localhost/=$POSTGRES_IP/g' ./WEB-INF/classes/properties/internal_config_for_env.properties\n\
+        \                sed -i 's/=5432/=$POSTGRES_PORT/g' ./WEB-INF/classes/properties/internal_config_for_env.properties\n\
+        \                fi\n                if [ \"$i\" == account* ];then\n    \
+        \              sed -i \"s/@account.hibernate.db.url.host@/$POSTGRES_IP/g\"\
+        \ ./WEB-INF/classes/properties/internal_config_for_env.properties\n      \
+        \            sed -i \"s/@account.hibernate.db.url.port@/$POSTGRES_PORT/g\"\
+        \ ./WEB-INF/classes/properties/internal_config_for_env.properties\n      \
+        \            sed -i 's/@account.hibernate.db.name@/adv_account/g' ./WEB-INF/classes/properties/internal_config_for_env.properties\n\
+        \                  sed -i 's/@account.hibernate.db.login@/aos/g' ./WEB-INF/classes/properties/internal_config_for_env.properties\n\
+        \                  sed -i 's/@account.hibernate.db.password@/Ptr9=k_.A*xx=PGn/g'\
+        \ ./WEB-INF/classes/properties/internal_config_for_env.properties\n      \
+        \            sed -i 's/=create/=validate/g' ./WEB-INF/classes/properties/internal_config_for_env.properties\n\
+        \                fi\n                rm -rf $i\n                jar -cvf $i\
+        \ *\n                mv $i ../\n                rm -rf *\n               \
+        \ cd ../\n                done\n\n                #rm -rf \"temp/\"\n\n  \
+        \              curl -v -u tomcatadmin:Password1 -T root*.war 'http://nimbusserver.aos.com:8000/manager/text/deploy?path=/ROOT&update=true'\n"
+      useAdvancedOptions: "false"
+      pulseFindingsUnstableSeverity: "ERROR"
+      pulseStepEnabled: "true"
+      pulseFindingsFailSeverity: "ERROR"
+      pulseFindingsFailOn: "false"
+      pulseConsoleUnstableOn: "false"
+      pulseUnitTestFailuresUnstableOn: "false"
+      pulseConsoleFailOn: "false"
+- expert:
+    title: "Run chain - UFT One AOS Web Regression"
+    name: "Run another chain"
+    key: "2110899"
+    id: "com.serena.starlight:runanotherchain"
+    chainOrder: "3"
+    properties:
+      pulseFindingsUnstableSeverityCount: "1"
+      pulseOutputVariableList: ""
+      pulseFindingsFailSeverityCount: "1"
+      chainKey: "2110537"
+      waitForOtherChainRunResult: "true"
+      chainName: "aos-source / uft-one-aos-web-regression"
+      pulseConsoleUnstableRegex: ""
+      pulseFindingsUnstableOn: "false"
+      pulseConsoleFailRegex: ""
+      pulseUnitTestFailuresFailOn: "false"
+      pulseDisplayFailedUnitTests: "DISPLAY_ALWAYS"
+      pulseFindingsUnstableSeverity: "ERROR"
+      useChainRunBranch: "true"
+      pulseStepEnabled: "true"
+      pulseFindingsFailSeverity: "ERROR"
+      pulseFindingsFailOn: "false"
+      pulseConsoleUnstableOn: "false"
+      pulseUnitTestFailuresUnstableOn: "false"
+      pulseConsoleFailOn: "false"
+- expert:
+    title: "Jenkins - UFT Dev Web Regression Test"
+    name: "Jenkins"
+    key: "2110900"
+    id: "com.serena.starlight:jenkins"
+    chainOrder: "4"
+    properties:
+      pulseOutputVariableList: ""
+      pulseFindingsUnstableSeverityCount: "1"
+      pulseFindingsFailSeverityCount: "1"
+      waitForBuild: "true"
+      updateRate: "60"
+      convertWarnings: "true"
+      pulseConsoleUnstableRegex: ""
+      jenkinsUrl: "http://nimbusserver.aos.com:8090/view/Test/job/aos-web-regression-test/"
+      pulseFindingsUnstableOn: "false"
+      pulseConsoleFailRegex: ""
+      pulseUnitTestFailuresFailOn: "false"
+      pulseDisplayFailedUnitTests: "DISPLAY_ALWAYS"
+      pulseFindingsUnstableSeverity: "ERROR"
+      autoConfigureBuildParams: "true"
+      pulseStepEnabled: "true"
+      pulseFindingsFailSeverity: "ERROR"
+      pulseFindingsFailOn: "false"
+      pulseConsoleUnstableOn: "false"
+      pulseUnitTestFailuresUnstableOn: "true"
+      pulseConsoleFailOn: "false"
+- expert:
+    title: "Jenkins - UFT Dev Selenium Test"
+    name: "Jenkins"
+    key: "2110901"
+    id: "com.serena.starlight:jenkins"
+    chainOrder: "5"
+    properties:
+      pulseOutputVariableList: ""
+      pulseFindingsUnstableSeverityCount: "1"
+      pulseFindingsFailSeverityCount: "1"
+      waitForBuild: "true"
+      updateRate: "60"
+      convertWarnings: "true"
+      pulseConsoleUnstableRegex: ""
+      jenkinsUrl: "http://nimbusserver.aos.com:8090/view/Test/job/aos-web-selenium-uftdev-test/"
+      pulseFindingsUnstableOn: "false"
+      pulseConsoleFailRegex: ""
+      pulseUnitTestFailuresFailOn: "false"
+      pulseDisplayFailedUnitTests: "DISPLAY_ALWAYS"
+      pulseFindingsUnstableSeverity: "ERROR"
+      autoConfigureBuildParams: "true"
+      pulseStepEnabled: "true"
+      pulseFindingsFailSeverity: "ERROR"
+      pulseFindingsFailOn: "false"
+      pulseConsoleUnstableOn: "false"
+      pulseUnitTestFailuresUnstableOn: "true"
+      pulseConsoleFailOn: "false"
+- expert:
+    title: "Publish results to Octane"
+    name: "Publish results to Octane"
+    key: "2110902"
+    id: "com.microfocus.adm.pulse:octanepublish"
+    chainOrder: "6"
+    properties:
+      pulseConsoleUnstableOn: "false"
+      pulseDisplayFailedUnitTests: "DISPLAY_ALWAYS"
+      pulseFindingsUnstableOn: "false"
+      pulseFindingsFailSeverity: "ERROR"
+      pulseStepEnabled: "true"
+      pulseFindingsFailSeverityCount: "1"
+      pulseUnitTestFailuresFailOn: "false"
+      pulseUnitTestFailuresUnstableOn: "false"
+      pulseConsoleFailRegex: ""
+      pulseFindingsUnstableSeverity: "ERROR"
+      pulseConsoleFailOn: "false"
+      pulseFindingsUnstableSeverityCount: "1"
+      pulseConsoleUnstableRegex: ""
+      pulseOutputVariableList: ""
+      pulseFindingsFailOn: "false"
+variables: {}
+readOnlyVariables: []
+privateVariables: []
+branchPattern: "*"
+detectOnGoingVulnerabilities: false
