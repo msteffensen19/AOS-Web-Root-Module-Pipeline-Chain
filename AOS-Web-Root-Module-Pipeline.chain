@@ -26,7 +26,7 @@ experts:
       pulseFindingsUnstableSeverityCount: "1"
       pulseFindingsFailSeverityCount: "1"
       goals: "clean install  -P DA -pl root -am"
-      javaHome: "/usr/lib/jvm/zulu11"
+      javaHome: "/usr/lib/jvm/java-11-openjdk-11.0.14.0.9-1.el7_9.x86_64"
       pulseConsoleUnstableRegex: ""
       mavenPath: "/usr/bin/mvn"
       pulseFindingsUnstableOn: "false"
